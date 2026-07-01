@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1302 Purkyňova — týdenní report</title>
+<style>
+  :root{
+    --ink:#1F3864; --ink2:#2E4A7D; --paper:#F4F2EC; --card:#FFFFFF;
+    --green:#2F7A4E; --green-soft:#E6F1EA; --green-line:#B9D8C6;
+    --amber-bg:#FEF6DE; --amber-line:#E7C765;
+    --text:#1B2436; --muted:#6A7382; --line:#E5E3DC; --danger:#B23B3B;
+    --radius:12px;
+    --sans: system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:var(--sans);color:var(--text);background:var(--paper);line-height:1.5;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{margin:0}
+  button{font-family:inherit}
+
+  /* Header */
+  .top{background:var(--ink);color:#fff;padding:18px 22px}
+  .top .wrap{max-width:1080px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .brand{font-size:20px;font-weight:800;letter-spacing:.2px}
+  .brand small{display:block;font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#AEBBD6;margin-top:2px}
+  .top .date{font-size:13px;color:#cdd6ea}
+  .top .date b{color:#fff}
+
+  /* Progress */
+  .progress{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+  .progress .wrap{max-width:1080px;margin:0 auto;padding:12px 22px}
+  .bar{height:6px;background:#EDEBE3;border-radius:999px;overflow:hidden}
+  .bar > i{display:block;height:100%;background:var(--ink);width:0;transition:width .35s ease}
+  .steps{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .chip{border:1px solid var(--line);background:#fff;color:var(--muted);font-size:12px;font-weight:600;
+        border-radius:999px;padding:4px 10px;cursor:pointer;transition:.15s;white-space:nowrap}
+  .chip:hover{border-color:var(--ink2);color:var(--ink2)}
+  .chip.active{background:var(--ink);border-color:var(--ink);color:#fff}
+  .chip.done{border-color:var(--green-line);background:var(--green-soft);color:var(--green)}
+  .chip.done.active{background:var(--ink);border-color:var(--ink);color:#fff}
+
+  /* Layout */
+  .shell{max-width:1080px;margin:22px auto;padding:0 22px;display:grid;grid-template-columns:1fr 300px;gap:22px;align-items:start}
+  @media (max-width:860px){.shell{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:26px 28px;box-shadow:0 1px 2px rgba(31,56,100,.04)}
+
+  .eyebrow{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--ink2)}
+  .step-title{font-size:24px;font-weight:800;margin:4px 0 4px;letter-spacing:-.01em}
+  .step-help{color:var(--muted);font-size:14px;margin-bottom:22px;max-width:60ch}
+
+  label.f{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text)}
+  .hint{font-size:12px;color:var(--muted);font-weight:400}
+  input[type=text],input[type=number],input[type=date],select,textarea{
+    width:100%;padding:10px 12px;border:1.5px solid var(--amber-line);background:var(--amber-bg);
+    border-radius:9px;font-size:15px;font-family:inherit;color:var(--text);outline:none;transition:.12s}
+  input:focus,select:focus,textarea:focus{border-color:var(--ink2);background:#fff;box-shadow:0 0 0 3px rgba(46,74,125,.12)}
+  textarea{resize:vertical;min-height:52px}
+  select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' fill='none' stroke='%236A7382' stroke-width='1.6'/></svg>");background-repeat:no-repeat;background-position:right 12px center;padding-right:30px}
+
+  .grid{display:grid;gap:16px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:1fr 1fr 1fr}
+  @media (max-width:620px){.g2,.g3{grid-template-columns:1fr}}
+
+  /* auto (calculated) field */
+  .calc{background:var(--green-soft);border:1.5px solid var(--green-line);border-radius:9px;padding:10px 12px;
+        font-size:15px;font-weight:700;color:var(--ink);display:flex;align-items:center;justify-content:space-between}
+  .calc .tag{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--green);
+             background:#fff;border:1px solid var(--green-line);border-radius:999px;padding:2px 7px}
+
+  /* occupancy table */
+  .otable{width:100%;border-collapse:collapse;margin-top:4px}
+  .otable th,.otable td{padding:9px 8px;text-align:center;font-size:14px;border-bottom:1px solid var(--line)}
+  .otable th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+  .otable td:first-child,.otable th:first-child{text-align:left;font-weight:700}
+  .otable input{max-width:92px;margin:0 auto;text-align:center;padding:7px 8px}
+  .otable .out{font-weight:700;color:var(--ink)}
+  .otable tr.total td{background:#F7F6F1;font-weight:800;border-top:2px solid var(--ink)}
+
+  /* dynamic rows */
+  .rowcard{border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:12px;background:#FCFBF7;position:relative}
+  .rowcard .rc-grid{display:grid;gap:10px}
+  .rowcard .del{position:absolute;top:10px;right:10px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:13px;font-weight:600}
+  .rowcard .del:hover{color:var(--danger)}
+  .rc-num{font-size:12px;font-weight:800;color:var(--ink2);letter-spacing:.05em;margin-bottom:8px}
+  .addbtn{border:1.5px dashed var(--ink2);color:var(--ink2);background:#fff;border-radius:9px;padding:10px 14px;
+          font-weight:700;font-size:14px;cursor:pointer;width:100%;transition:.15s}
+  .addbtn:hover{background:#EEF2F9}
+  .empty{color:var(--muted);font-size:14px;font-style:italic;padding:8px 0 14px}
+
+  /* nav */
+  .nav{display:flex;justify-content:space-between;gap:12px;margin-top:26px;padding-top:20px;border-top:1px solid var(--line)}
+  .btn{border:none;border-radius:9px;padding:11px 22px;font-size:15px;font-weight:700;cursor:pointer;transition:.15s}
+  .btn-primary{background:var(--ink);color:#fff}
+  .btn-primary:hover{background:var(--ink2)}
+  .btn-ghost{background:#fff;border:1.5px solid var(--line);color:var(--text)}
+  .btn-ghost:hover{border-color:var(--ink2);color:var(--ink2)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+
+  /* live panel */
+  .live{position:sticky;top:96px}
+  .live h3{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:0 1px 2px rgba(31,56,100,.04)}
+  .kpi .big{font-size:30px;font-weight:800;color:var(--ink);letter-spacing:-.02em;line-height:1.1}
+  .kpi .lbl{font-size:12px;color:var(--muted);font-weight:600;margin-top:2px}
+  .kpi .row{display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+  .kpi .row:first-of-type{margin-top:14px}
+  .kpi .row span:last-child{font-weight:800;color:var(--ink)}
+  .noteBox{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.5}
+
+  /* legend intro */
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin:18px 0 6px}
+  .legend div{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+  .sw{width:16px;height:16px;border-radius:4px;border:1.5px solid}
+  .sw.a{background:var(--amber-bg);border-color:var(--amber-line)}
+  .sw.c{background:var(--green-soft);border-color:var(--green-line)}
+
+  /* REPORT (final + print) */
+  .report{font-size:13px;color:#111}
+  .report .rhead{background:var(--ink);color:#fff;padding:14px 18px;border-radius:8px 8px 0 0}
+  .report .rhead h2{font-size:18px;font-weight:800}
+  .report .rhead .d{font-size:12px;color:#c9d3e8;margin-top:2px}
+  .report .sec{border:1px solid var(--line);border-top:none;padding:0}
+  .report .sec:last-child{border-radius:0 0 8px 8px}
+  .report .sect{background:#EEF1F7;color:var(--ink);font-weight:800;font-size:12px;letter-spacing:.06em;
+                text-transform:uppercase;padding:8px 14px;border-top:1px solid var(--line)}
+  .report table{width:100%;border-collapse:collapse}
+  .report th,.report td{border:1px solid var(--line);padding:6px 10px;text-align:left;font-size:12.5px}
+  .report th{background:#F6F7FA;font-weight:700}
+  .report td.n{text-align:right}
+  .report .kpis{display:flex;gap:10px;padding:12px 14px;flex-wrap:wrap}
+  .report .kbox{flex:1;min-width:120px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#FAFBFD}
+  .report .kbox b{display:block;font-size:20px;color:var(--ink)}
+  .report .kbox small{color:var(--muted);font-size:11px}
+  .muted-i{color:var(--muted);font-style:italic;padding:8px 14px}
+
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;
+         padding:12px 20px;border-radius:10px;font-weight:600;font-size:14px;opacity:0;pointer-events:none;transition:.3s;z-index:99}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  @media print{
+    .top,.progress,.live,.nav,.toolbar,.noPrint{display:none !important}
+    .shell{display:block;margin:0;padding:0;max-width:none}
+    .card{border:none;box-shadow:none;padding:0}
+    body{background:#fff}
+    .report .sect{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .report .rhead{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="wrap">
+    <div class="brand">1302 Purkyňova<small>Týdenní report · Ústí nad Labem</small></div>
+    <div class="date">Report ke dni: <b id="topDate">—</b></div>
+  </div>
+</div>
+
+<div class="progress">
+  <div class="wrap">
+    <div class="bar"><i id="barFill"></i></div>
+    <div class="steps" id="steps"></div>
+  </div>
+</div>
+
+<div class="shell">
+  <div>
+    <div class="card" id="card"><!-- step content injected --></div>
+    <div class="nav noPrint">
+      <button class="btn btn-ghost" id="prevBtn">← Zpět</button>
+      <button class="btn btn-primary" id="nextBtn">Pokračovat →</button>
+    </div>
+  </div>
+
+  <aside class="live noPrint">
+    <h3>Živý přehled</h3>
+    <div class="kpi">
+      <div class="big" id="lvOcc">—</div>
+      <div class="lbl">Celková obsazenost</div>
+      <div class="row"><span>Průměrný nájem</span><span id="lvRent">—</span></div>
+      <div class="row"><span>Pronajato / kapacita</span><span id="lvUnits">—</span></div>
+      <div class="row"><span>Poptávky</span><span id="lvDem">—</span></div>
+      <div class="row"><span>Prohlídky</span><span id="lvView">—</span></div>
+      <div class="row"><span>Nové smlouvy</span><span id="lvNew">—</span></div>
+      <div class="row"><span>Odchozí</span><span id="lvOut">—</span></div>
+    </div>
+    <div class="noteBox">Data se ukládají jen ve vašem prohlížeči. Nikam se neodesílají. Report vygenerujete v posledním kroku.</div>
+    <button class="btn btn-ghost noPrint" style="width:100%;margin-top:12px;font-size:13px;padding:8px" onclick="resetAll()">Vymazat vše a začít znovu</button>
+  </aside>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const TYPES = ["1+kk","2+kk","2+1"];
+const RESULT_CATS = [
+  "Nepřizpůsobiví / bez práce / EXE / INS",
+  "Na lustraci – čekáme",
+  "Bez reakce / nepřišel",
+  "Jiný termín – přesunuto",
+  "Čekáme na reakci",
+  "Přijato / podpis smlouvy"
+];
+const SREALITY = "https://www.sreality.cz/hledani/pronajem/byty/usti-nad-labem?region=ulice%20Purky%C5%88ova%2C%20%C3%9Ast%C3%AD%20nad%20Labem&region-id=136245&region-typ=street";
+
+function blank(){
+  return {
+    datum: new Date().toISOString().slice(0,10),
+    kapacita:{"1+kk":11,"2+kk":44,"2+1":7},
+    pronajato:{"1+kk":"","2+kk":"","2+1":""},
+    najem:{"1+kk":"","2+kk":"","2+1":""},
+    poptavky:{portaly:"",sreality:"",telefon:""},
+    prohlidky:"",
+    vysledky: RESULT_CATS.map(l=>({label:l,pocet:"",detail:""})),
+    prichozi:"",
+    noveSmlouvy:[],
+    odchozi:[],
+    dluznici:[],
+    poznamky:[{tema:"",text:""}],
+    sousedCelkem:"", sousedTyden:""
+  };
+}
+let S = blank();
+let step = 0;
+
+/* ---------- persistence (best-effort) ---------- */
+function save(){ try{ localStorage.setItem("purkynova_report", JSON.stringify(S)); }catch(e){} }
+function load(){ try{ const r=localStorage.getItem("purkynova_report"); if(r){ S=Object.assign(blank(),JSON.parse(r)); } }catch(e){} }
+function resetAll(){ if(confirm("Opravdu vymazat všechna zadaná data a začít znovu?")){ S=blank(); step=0; save(); render(); } }
+
+/* ---------- helpers ---------- */
+const num = v => { const n=parseFloat(String(v).replace(",",".")); return isNaN(n)?0:n; };
+const czNum = n => Math.round(n).toLocaleString("cs-CZ");
+const czPct = n => n.toLocaleString("cs-CZ",{minimumFractionDigits:1,maximumFractionDigits:1})+" %";
+const esc = s => (s==null?"":String(s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+/* ---------- derived values ---------- */
+function calc(){
+  let pron=0,kap=0;
+  TYPES.forEach(t=>{ pron+=num(S.pronajato[t]); kap+=num(S.kapacita[t]); });
+  const occ = kap>0 ? pron/kap*100 : 0;
+  let wsum=0;
+  TYPES.forEach(t=>{ wsum += num(S.najem[t])*num(S.pronajato[t]); });
+  const avg = pron>0 ? wsum/pron : 0;
+  const dem = num(S.poptavky.portaly)+num(S.poptavky.sreality)+num(S.poptavky.telefon);
+  const nove = S.noveSmlouvy.filter(r=>r.najemnik&&r.najemnik.trim()).length;
+  const odch = S.odchozi.filter(r=>r.najemnik&&r.najemnik.trim()).length;
+  return {pron,kap,occ,avg,dem,nove,odch};
+}
+
+/* ---------- step definitions ---------- */
+const STEPS = [
+  {name:"Úvod", render:renderIntro},
+  {name:"Obsazenost", render:renderOcc},
+  {name:"Nájmy", render:renderRent},
+  {name:"Poptávky", render:renderDemand},
+  {name:"Prohlídky", render:renderResults},
+  {name:"Nové smlouvy", render:renderNew},
+  {name:"Odchozí", render:renderOut},
+  {name:"Dlužníci", render:renderDebt},
+  {name:"Poznámky", render:renderNotes},
+  {name:"Akce sousedé", render:renderNeighbor},
+  {name:"Hotový report", render:renderReport}
+];
+
+function header(eyebrow,title,help){
+  return `<div class="eyebrow">${eyebrow}</div><h1 class="step-title">${title}</h1><p class="step-help">${help}</p>`;
+}
+
+/* bind helper: on input update state path then live-refresh */
+function bind(el){ el.addEventListener("input", e=>{ setPath(e.target.dataset.path, e.target.value); save(); refreshLive(); if(e.target.dataset.recalc) rerenderCalc(); }); }
+function setPath(path,val){
+  const p=path.split("."); let o=S;
+  for(let i=0;i<p.length-1;i++){ const k=p[i]; o=Array.isArray(o)?o[+k]:o[k]; }
+  o[p[p.length-1]]=val;
+}
+
+/* ---------- STEP 0: intro ---------- */
+function renderIntro(c){
+  c.innerHTML = header("Vítejte","Týdenní report — průvodce",
+    "Projděte kroky odshora dolů. <b>Žlutá pole</b> vyplňujete vy, <b>zelená pole</b> se dopočítají sama. Na konci vygenerujete hotový report, který stačí vytisknout do PDF nebo zkopírovat a odeslat.")
+    + `
+    <div class="legend">
+      <div><span class="sw a"></span> Žluté = vyplňujete vy</div>
+      <div><span class="sw c"></span> Zelené = spočítá se automaticky</div>
+    </div>
+    <div class="grid" style="max-width:320px;margin-top:20px">
+      <div><label class="f">Datum reportu</label>
+        <input type="date" data-path="datum" value="${esc(S.datum)}"></div>
+    </div>`;
+  bind(c.querySelector('[data-path="datum"]'));
+}
+
+/* ---------- STEP 1: occupancy ---------- */
+function renderOcc(c){
+  const d=calc();
+  c.innerHTML = header("Krok 1","Obsazenost",
+    "Zadejte, kolik jednotek je pronajato. Kapacita domu je předvyplněná — měňte ji jen když se změní počet bytů. Volné jednotky i procenta se dopočítají.")
+    + `<table class="otable">
+      <thead><tr><th>Dispozice</th><th>Pronajato</th><th>Kapacita</th><th>Volné</th><th>Obsazenost</th></tr></thead>
+      <tbody>
+      ${TYPES.map(t=>{
+        const vol=num(S.kapacita[t])-num(S.pronajato[t]);
+        const o=num(S.kapacita[t])>0?num(S.pronajato[t])/num(S.kapacita[t])*100:0;
+        return `<tr>
+          <td>${t}</td>
+          <td><input type="number" min="0" data-path="pronajato.${t}" data-recalc="1" value="${esc(S.pronajato[t])}"></td>
+          <td><input type="number" min="0" data-path="kapacita.${t}" data-recalc="1" value="${esc(S.kapacita[t])}"></td>
+          <td class="out">${czNum(vol)}</td>
+          <td class="out">${czPct(o)}</td></tr>`;
+      }).join("")}
+      <tr class="total"><td>Celkem</td><td>${czNum(d.pron)}</td><td>${czNum(d.kap)}</td>
+        <td>${czNum(d.kap-d.pron)}</td><td>${czPct(d.occ)}</td></tr>
+      </tbody></table>`;
+  c.querySelectorAll("input").forEach(bind);
+}
+
+/* ---------- STEP 2: rents ---------- */
+function renderRent(c){
+  const d=calc();
+  c.innerHTML = header("Krok 2","Průměrné nájmy (bez služeb)",
+    "Zadejte průměrný nájem za každou dispozici v Kč. Celkový průměr se spočítá jako vážený průměr podle počtu pronajatých jednotek.")
+    + `<div class="grid g3">
+      ${TYPES.map(t=>`<div><label class="f">Průměrný nájem ${t} <span class="hint">(Kč)</span></label>
+        <input type="number" min="0" data-path="najem.${t}" data-recalc="1" value="${esc(S.najem[t])}"></div>`).join("")}
+    </div>
+    <div style="margin-top:18px;max-width:340px">
+      <label class="f">Celkový průměr nájmu (vážený)</label>
+      <div class="calc"><span id="wavg">${d.avg>0?czNum(d.avg)+" Kč":"—"}</span><span class="tag">spočítáno</span></div>
+    </div>`;
+  c.querySelectorAll("input").forEach(bind);
+}
+
+/* ---------- STEP 3: demand ---------- */
+function renderDemand(c){
+  const d=calc();
+  c.innerHTML = header("Krok 3","Poptávky & prohlídky (poslední týden)",
+    "Zadejte počet poptávek podle kanálu a počet uskutečněných prohlídek. Celkový počet poptávajících se sečte automaticky.")
+    + `<div class="grid g3">
+      <div><label class="f">Inzertní portály + Meta</label><input type="number" min="0" data-path="poptavky.portaly" data-recalc="1" value="${esc(S.poptavky.portaly)}"></div>
+      <div><label class="f">S-reality</label><input type="number" min="0" data-path="poptavky.sreality" data-recalc="1" value="${esc(S.poptavky.sreality)}"></div>
+      <div><label class="f">Telefonický kontakt</label><input type="number" min="0" data-path="poptavky.telefon" data-recalc="1" value="${esc(S.poptavky.telefon)}"></div>
+    </div>
+    <div class="grid g2" style="margin-top:18px">
+      <div><label class="f">Celkem poptávajících</label>
+        <div class="calc"><span id="demTot">${czNum(d.dem)}</span><span class="tag">spočítáno</span></div></div>
+      <div><label class="f">Počet prohlídek</label><input type="number" min="0" data-path="prohlidky" value="${esc(S.prohlidky)}"></div>
+    </div>`;
+  c.querySelectorAll("input").forEach(bind);
+}
+
+/* ---------- STEP 4: viewing results ---------- */
+function renderResults(c){
+  c.innerHTML = header("Krok 4","Výsledky prohlídek",
+    "U každé kategorie zadejte počet a případně krátkou poznámku. Co se netýká tohoto týdne, nechte prázdné (0).")
+    + `<div class="grid" style="gap:12px">
+      ${S.vysledky.map((v,i)=>`
+        <div class="rowcard" style="margin:0">
+          <div class="rc-num">${esc(v.label)}</div>
+          <div class="rc-grid g2">
+            <div><label class="f">Počet</label><input type="number" min="0" data-path="vysledky.${i}.pocet" value="${esc(v.pocet)}"></div>
+            <div><label class="f">Poznámka / detail</label><input type="text" data-path="vysledky.${i}.detail" value="${esc(v.detail)}"></div>
+          </div>
+        </div>`).join("")}
+    </div>`;
+  c.querySelectorAll("input").forEach(bind);
+}
+
+/* ---------- generic dynamic table ---------- */
+function dispSelect(path,val){
+  return `<select data-path="${path}"><option value=""${val?"":" selected"}>—</option>
+    ${TYPES.map(t=>`<option${t===val?" selected":""}>${t}</option>`).join("")}</select>`;
+}
+function renderList(c, cfg){
+  const rows = S[cfg.key];
+  c.innerHTML = header(cfg.eyebrow, cfg.title, cfg.help)
+    + `<div id="rows"></div>
+       <button class="addbtn" id="addRow">+ ${cfg.addLabel}</button>`;
+  const holder=c.querySelector("#rows");
+  function draw(){
+    if(rows.length===0){ holder.innerHTML=`<div class="empty">Zatím nic — pokud tento týden ${cfg.emptyWord}, nechte prázdné.</div>`; refreshLive(); return; }
+    holder.innerHTML = rows.map((r,i)=>`
+      <div class="rowcard">
+        <button class="del" data-i="${i}">✕ smazat</button>
+        <div class="rc-num">${cfg.rowLabel} ${i+1}</div>
+        <div class="rc-grid ${cfg.gridClass}">
+          ${cfg.fields.map(f=>{
+            const path=`${cfg.key}.${i}.${f.k}`;
+            const val=r[f.k]||"";
+            let input;
+            if(f.type==="disp") input=dispSelect(path,val);
+            else if(f.type==="date") input=`<input type="date" data-path="${path}" value="${esc(val)}">`;
+            else if(f.type==="area") input=`<textarea data-path="${path}">${esc(val)}</textarea>`;
+            else input=`<input type="text" data-path="${path}" value="${esc(val)}">`;
+            return `<div style="${f.span?'grid-column:1/-1':''}"><label class="f">${f.label}</label>${input}</div>`;
+          }).join("")}
+        </div>
+      </div>`).join("");
+    holder.querySelectorAll("[data-path]").forEach(el=>{
+      el.addEventListener("input",e=>{ setPath(e.target.dataset.path,e.target.value); save(); refreshLive(); });
+    });
+    holder.querySelectorAll(".del").forEach(b=>b.addEventListener("click",e=>{
+      rows.splice(+e.currentTarget.dataset.i,1); save(); draw();
+    }));
+    refreshLive();
+  }
+  c.querySelector("#addRow").addEventListener("click",()=>{ rows.push(cfg.newRow()); save(); draw(); });
+  draw();
+}
+
+function renderNew(c){
+  renderList(c,{
+    key:"noveSmlouvy", eyebrow:"Krok 5", title:"Nové smlouvy (NS / PNS)",
+    help:"Přidejte řádek za každou novou smlouvu podepsanou tento týden. Počítá se automaticky do přehledu.",
+    addLabel:"Přidat smlouvu", rowLabel:"Smlouva", addLabelWord:"", emptyWord:"žádná nová smlouva nevznikla",
+    gridClass:"g3", newRow:()=>({typ:"",disp:"",najemnik:"",jednotka:"",datum:"",pozn:""}),
+    fields:[
+      {k:"typ",label:"Typ (NS / PNS)"},
+      {k:"disp",label:"Dispozice",type:"disp"},
+      {k:"najemnik",label:"Nájemník / firma"},
+      {k:"jednotka",label:"Č. jednotky"},
+      {k:"datum",label:"Datum podpisu",type:"date"},
+      {k:"pozn",label:"Poznámka"}
+    ]
+  });
+}
+function renderOut(c){
+  renderList(c,{
+    key:"odchozi", eyebrow:"Krok 6", title:"Odchozí nájemníci",
+    help:"Přidejte řádek za každého odcházejícího nájemníka. Počet se promítne do přehledu pohybů.",
+    addLabel:"Přidat odchozího", rowLabel:"Odchozí", emptyWord:"nikdo neodchází",
+    gridClass:"g3", newRow:()=>({jednotka:"",disp:"",najemnik:"",duvod:""}),
+    fields:[
+      {k:"jednotka",label:"Jednotka č."},
+      {k:"disp",label:"Dispozice",type:"disp"},
+      {k:"najemnik",label:"Nájemník / firma"},
+      {k:"duvod",label:"Důvod odchodu",type:"area",span:true}
+    ]
+  });
+}
+function renderDebt(c){
+  renderList(c,{
+    key:"dluznici", eyebrow:"Krok 7", title:"Dlužníci & eskalace",
+    help:"Přidejte řádek za každého dlužníka: koho se to týká, aktuální stav a jaká akce proběhla.",
+    addLabel:"Přidat dlužníka", rowLabel:"Dlužník", emptyWord:"nejsou žádní dlužníci",
+    gridClass:"g2", newRow:()=>({najemnik:"",stav:"",akce:""}),
+    fields:[
+      {k:"najemnik",label:"Nájemník"},
+      {k:"stav",label:"Stav"},
+      {k:"akce",label:"Akce / poznámka",type:"area",span:true}
+    ]
+  });
+}
+function renderNotes(c){
+  renderList(c,{
+    key:"poznamky", eyebrow:"Krok 8", title:"Poznámky & speciální byty",
+    help:"Cokoli důležitého mimo běžná čísla — byty v rekonstrukci, poruchy, provozní poznámky.",
+    addLabel:"Přidat poznámku", rowLabel:"Poznámka", emptyWord:"není co doplnit",
+    gridClass:"g2", newRow:()=>({tema:"",text:""}),
+    fields:[
+      {k:"tema",label:"Objekt / téma"},
+      {k:"text",label:"Poznámka",type:"area",span:true}
+    ]
+  });
+}
+
+/* ---------- STEP 9: neighbor action ---------- */
+function renderNeighbor(c){
+  c.innerHTML = header("Krok 9",'Akce „Najdi si svého souseda“',
+    "Kolik smluv přinesla tato akce celkem od svého začátku a kolik z toho přibylo tento týden.")
+    + `<div class="grid g2" style="max-width:520px">
+      <div><label class="f">Celkem smluv od začátku akce</label><input type="number" min="0" data-path="sousedCelkem" value="${esc(S.sousedCelkem)}"></div>
+      <div><label class="f">Z toho tento týden</label><input type="number" min="0" data-path="sousedTyden" value="${esc(S.sousedTyden)}"></div>
+    </div>`;
+  c.querySelectorAll("input").forEach(bind);
+}
+
+/* ---------- STEP 10: final report ---------- */
+function renderReport(c){
+  const d=calc();
+  const dt = S.datum ? S.datum.split("-").reverse().join(".") : "—";
+  const row = (a,b,cc,dd,ee)=>`<tr><td>${a}</td><td class="n">${b}</td><td class="n">${cc}</td><td class="n">${dd}</td><td class="n">${ee}</td></tr>`;
+  const rentDone = d.avg>0?czNum(d.avg)+" Kč":"—";
+
+  const vysRows = S.vysledky.map(v=>`<tr><td>${esc(v.label)}</td><td class="n">${esc(v.pocet||"0")}</td><td>${esc(v.detail)}</td></tr>`).join("");
+  const nsRows = S.noveSmlouvy.filter(r=>r.najemnik&&r.najemnik.trim()).map(r=>
+    `<tr><td>${esc(r.typ)}</td><td>${esc(r.disp)}</td><td>${esc(r.najemnik)}</td><td>${esc(r.jednotka)}</td><td>${esc(r.datum?r.datum.split("-").reverse().join("."):"")}</td><td>${esc(r.pozn)}</td></tr>`).join("");
+  const odRows = S.odchozi.filter(r=>r.najemnik&&r.najemnik.trim()).map(r=>
+    `<tr><td>${esc(r.jednotka)}</td><td>${esc(r.disp)}</td><td>${esc(r.najemnik)}</td><td>${esc(r.duvod)}</td></tr>`).join("");
+  const dlRows = S.dluznici.filter(r=>r.najemnik&&r.najemnik.trim()).map(r=>
+    `<tr><td>${esc(r.najemnik)}</td><td>${esc(r.stav)}</td><td>${esc(r.akce)}</td></tr>`).join("");
+  const pzRows = S.poznamky.filter(r=>(r.tema&&r.tema.trim())||(r.text&&r.text.trim())).map(r=>
+    `<tr><td>${esc(r.tema)}</td><td>${esc(r.text)}</td></tr>`).join("");
+
+  c.innerHTML = header("Hotovo","Hotový report",
+    "Zkontrolujte přehled. Tlačítkem níže ho vytisknete do PDF nebo zkopírujete jako text a odešlete vedení.")
+    + `<div class="toolbar noPrint">
+        <button class="btn btn-primary" onclick="window.print()">🖨 Vytisknout / uložit PDF</button>
+        <button class="btn btn-ghost" onclick="copyText()">Kopírovat jako text</button>
+      </div>
+    <div class="report" id="reportOut">
+      <div class="rhead"><h2>1302 Purkyňova — týdenní report</h2><div class="d">Datum reportu: ${dt}</div></div>
+      <div class="sec">
+        <div class="kpis">
+          <div class="kbox"><b>${czPct(d.occ)}</b><small>Celková obsazenost</small></div>
+          <div class="kbox"><b>${rentDone}</b><small>Průměrný nájem (vážený)</small></div>
+          <div class="kbox"><b>${czNum(d.pron)}/${czNum(d.kap)}</b><small>Pronajato / kapacita</small></div>
+        </div>
+
+        <div class="sect">Obsazenost</div>
+        <table>
+          <tr><th>Dispozice</th><th style="text-align:right">Pronajato</th><th style="text-align:right">Kapacita</th><th style="text-align:right">Volné</th><th style="text-align:right">Obsazenost</th></tr>
+          ${TYPES.map(t=>{const vol=num(S.kapacita[t])-num(S.pronajato[t]);const o=num(S.kapacita[t])>0?num(S.pronajato[t])/num(S.kapacita[t])*100:0;
+            return row(t,czNum(num(S.pronajato[t])),czNum(num(S.kapacita[t])),czNum(vol),czPct(o));}).join("")}
+          <tr style="font-weight:800;background:#F1F3F8">${row("Celkem",czNum(d.pron),czNum(d.kap),czNum(d.kap-d.pron),czPct(d.occ)).replace("<tr>","").replace("</tr>","")}</tr>
+        </table>
+
+        <div class="sect">Průměrné nájmy (bez služeb)</div>
+        <table>
+          <tr><th>Dispozice</th><th style="text-align:right">Průměrný nájem</th></tr>
+          ${TYPES.map(t=>`<tr><td>${t}</td><td class="n">${num(S.najem[t])?czNum(num(S.najem[t]))+" Kč":"—"}</td></tr>`).join("")}
+          <tr style="font-weight:800;background:#F1F3F8"><td>Celkový průměr (vážený)</td><td class="n">${rentDone}</td></tr>
+        </table>
+
+        <div class="sect">Pohyby nájemníků (tento týden)</div>
+        <table>
+          <tr><th style="text-align:right">Příchozí</th><th style="text-align:right">Odchozí</th><th style="text-align:right">Nové smlouvy (NS/PNS)</th></tr>
+          <tr><td class="n">${esc(S.prichozi||"0")}</td><td class="n">${d.odch}</td><td class="n">${d.nove}</td></tr>
+        </table>
+
+        <div class="sect">Poptávky & prohlídky (poslední týden)</div>
+        <table>
+          <tr><td>Inzertní portály + Meta</td><td class="n">${czNum(num(S.poptavky.portaly))}</td></tr>
+          <tr><td>S-reality</td><td class="n">${czNum(num(S.poptavky.sreality))}</td></tr>
+          <tr><td>Telefonický kontakt</td><td class="n">${czNum(num(S.poptavky.telefon))}</td></tr>
+          <tr style="font-weight:800;background:#F1F3F8"><td>Celkem poptávajících</td><td class="n">${czNum(d.dem)}</td></tr>
+          <tr><td>Prohlídky</td><td class="n">${czNum(num(S.prohlidky))}</td></tr>
+        </table>
+
+        <div class="sect">Výsledky prohlídek</div>
+        <table><tr><th>Výsledek / kategorie</th><th style="text-align:right">Počet</th><th>Poznámka</th></tr>${vysRows}</table>
+
+        <div class="sect">Nové smlouvy (NS / PNS)</div>
+        ${nsRows?`<table><tr><th>Typ</th><th>Dispozice</th><th>Nájemník / firma</th><th>Č. jednotky</th><th>Datum podpisu</th><th>Poznámka</th></tr>${nsRows}</table>`:`<div class="muted-i">Tento týden bez nových smluv.</div>`}
+
+        <div class="sect">Odchozí nájemníci</div>
+        ${odRows?`<table><tr><th>Jednotka č.</th><th>Dispozice</th><th>Nájemník / firma</th><th>Důvod odchodu</th></tr>${odRows}</table>`:`<div class="muted-i">Tento týden nikdo neodchází.</div>`}
+
+        <div class="sect">Dlužníci & eskalace</div>
+        ${dlRows?`<table><tr><th>Nájemník</th><th>Stav</th><th>Akce / poznámka</th></tr>${dlRows}</table>`:`<div class="muted-i">Žádní dlužníci.</div>`}
+
+        <div class="sect">Poznámky & speciální byty</div>
+        ${pzRows?`<table><tr><th>Objekt / téma</th><th>Poznámka</th></tr>${pzRows}</table>`:`<div class="muted-i">Bez poznámek.</div>`}
+
+        <div class="sect">Akce „Najdi si svého souseda“</div>
+        <table>
+          <tr><td>Celkem smluv od začátku akce</td><td class="n">${czNum(num(S.sousedCelkem))}</td></tr>
+          <tr><td>Z toho tento týden</td><td class="n">${czNum(num(S.sousedTyden))}</td></tr>
+        </table>
+
+        <div class="sect">Inzerce</div>
+        <table><tr><td>Odkaz (S-reality)</td><td style="word-break:break-all"><a href="${SREALITY}">${SREALITY}</a></td></tr></table>
+      </div>
+    </div>`;
+}
+
+/* plain-text version for clipboard */
+function reportText(){
+  const d=calc();
+  const dt = S.datum ? S.datum.split("-").reverse().join(".") : "—";
+  const L=[];
+  L.push("1302 PURKYŇOVA — TÝDENNÍ REPORT");
+  L.push("Datum reportu: "+dt); L.push("");
+  L.push("OBSAZENOST");
+  TYPES.forEach(t=>{const vol=num(S.kapacita[t])-num(S.pronajato[t]);const o=num(S.kapacita[t])>0?num(S.pronajato[t])/num(S.kapacita[t])*100:0;
+    L.push(`  ${t}: pronajato ${czNum(num(S.pronajato[t]))}/${czNum(num(S.kapacita[t]))}, volné ${czNum(vol)}, obsazenost ${czPct(o)}`);});
+  L.push(`  CELKEM: ${czNum(d.pron)}/${czNum(d.kap)}, obsazenost ${czPct(d.occ)}`); L.push("");
+  L.push("PRŮMĚRNÉ NÁJMY (bez služeb)");
+  TYPES.forEach(t=>L.push(`  ${t}: ${num(S.najem[t])?czNum(num(S.najem[t]))+" Kč":"—"}`));
+  L.push(`  Celkový průměr (vážený): ${d.avg>0?czNum(d.avg)+" Kč":"—"}`); L.push("");
+  L.push("POHYBY NÁJEMNÍKŮ (tento týden)");
+  L.push(`  Příchozí: ${S.prichozi||"0"}   Odchozí: ${d.odch}   Nové smlouvy: ${d.nove}`); L.push("");
+  L.push("POPTÁVKY & PROHLÍDKY");
+  L.push(`  Inzertní portály + Meta: ${czNum(num(S.poptavky.portaly))}`);
+  L.push(`  S-reality: ${czNum(num(S.poptavky.sreality))}`);
+  L.push(`  Telefonický kontakt: ${czNum(num(S.poptavky.telefon))}`);
+  L.push(`  Celkem poptávajících: ${czNum(d.dem)}`);
+  L.push(`  Prohlídky: ${czNum(num(S.prohlidky))}`); L.push("");
+  L.push("VÝSLEDKY PROHLÍDEK");
+  S.vysledky.forEach(v=>L.push(`  ${v.label}: ${v.pocet||"0"}${v.detail?" — "+v.detail:""}`)); L.push("");
+  L.push("NOVÉ SMLOUVY (NS/PNS)");
+  const ns=S.noveSmlouvy.filter(r=>r.najemnik&&r.najemnik.trim());
+  ns.length?ns.forEach(r=>L.push(`  ${r.typ} ${r.disp} ${r.najemnik} (${r.jednotka}) ${r.datum?r.datum.split("-").reverse().join("."):""} ${r.pozn}`)):L.push("  Tento týden bez nových smluv.");
+  L.push("");
+  L.push("ODCHOZÍ NÁJEMNÍCI");
+  const od=S.odchozi.filter(r=>r.najemnik&&r.najemnik.trim());
+  od.length?od.forEach(r=>L.push(`  ${r.jednotka} ${r.disp} ${r.najemnik} — ${r.duvod}`)):L.push("  Tento týden nikdo neodchází.");
+  L.push("");
+  L.push("DLUŽNÍCI & ESKALACE");
+  const dl=S.dluznici.filter(r=>r.najemnik&&r.najemnik.trim());
+  dl.length?dl.forEach(r=>L.push(`  ${r.najemnik} — ${r.stav} — ${r.akce}`)):L.push("  Žádní dlužníci.");
+  L.push("");
+  L.push("POZNÁMKY & SPECIÁLNÍ BYTY");
+  const pz=S.poznamky.filter(r=>(r.tema&&r.tema.trim())||(r.text&&r.text.trim()));
+  pz.length?pz.forEach(r=>L.push(`  ${r.tema}: ${r.text}`)):L.push("  Bez poznámek.");
+  L.push("");
+  L.push("AKCE „NAJDI SI SVÉHO SOUSEDA“");
+  L.push(`  Celkem smluv od začátku: ${czNum(num(S.sousedCelkem))} (tento týden ${czNum(num(S.sousedTyden))})`);
+  return L.join("\n");
+}
+function copyText(){
+  const t=reportText();
+  navigator.clipboard?.writeText(t).then(()=>toast("Report zkopírován do schránky ✓"),()=>fallbackCopy(t));
+}
+function fallbackCopy(t){ const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");toast("Report zkopírován ✓");}catch(e){toast("Kopírování se nezdařilo");}ta.remove(); }
+function toast(m){ const el=document.getElementById("toast");el.textContent=m;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),2200); }
+
+/* ---------- live panel ---------- */
+function refreshLive(){
+  const d=calc();
+  document.getElementById("lvOcc").textContent = d.kap>0?czPct(d.occ):"—";
+  document.getElementById("lvRent").textContent = d.avg>0?czNum(d.avg)+" Kč":"—";
+  document.getElementById("lvUnits").textContent = (d.pron||d.kap)?`${czNum(d.pron)}/${czNum(d.kap)}`:"—";
+  document.getElementById("lvDem").textContent = czNum(d.dem);
+  document.getElementById("lvView").textContent = czNum(num(S.prohlidky));
+  document.getElementById("lvNew").textContent = d.nove;
+  document.getElementById("lvOut").textContent = d.odch;
+  document.getElementById("topDate").textContent = S.datum? S.datum.split("-").reverse().join("."):"—";
+}
+/* recalc only the auto fields visible in occupancy/rent/demand steps without losing focus */
+function rerenderCalc(){
+  const d=calc();
+  const w=document.getElementById("wavg"); if(w) w.textContent = d.avg>0?czNum(d.avg)+" Kč":"—";
+  const dm=document.getElementById("demTot"); if(dm) dm.textContent = czNum(d.dem);
+  // occupancy live cells
+  if(document.querySelector(".otable")){
+    const card=document.getElementById("card");
+    // re-render occupancy outputs
+    const trs=card.querySelectorAll(".otable tbody tr");
+    TYPES.forEach((t,i)=>{
+      const vol=num(S.kapacita[t])-num(S.pronajato[t]);
+      const o=num(S.kapacita[t])>0?num(S.pronajato[t])/num(S.kapacita[t])*100:0;
+      const cells=trs[i].querySelectorAll("td");
+      cells[3].textContent=czNum(vol); cells[4].textContent=czPct(o);
+    });
+    const tot=trs[3].querySelectorAll("td");
+    tot[1].textContent=czNum(d.pron);tot[2].textContent=czNum(d.kap);tot[3].textContent=czNum(d.kap-d.pron);tot[4].textContent=czPct(d.occ);
+  }
+}
+
+/* ---------- navigation & chrome ---------- */
+function render(){
+  const card=document.getElementById("card");
+  STEPS[step].render(card);
+  // steps chips
+  const sc=document.getElementById("steps");
+  sc.innerHTML=STEPS.map((s,i)=>`<button class="chip ${i===step?"active":""} ${i<step?"done":""}" data-i="${i}">${i+1}. ${s.name}</button>`).join("");
+  sc.querySelectorAll(".chip").forEach(b=>b.addEventListener("click",e=>{step=+e.currentTarget.dataset.i;render();window.scrollTo({top:0,behavior:"smooth"});}));
+  document.getElementById("barFill").style.width=((step)/(STEPS.length-1)*100)+"%";
+  document.getElementById("prevBtn").disabled = step===0;
+  const nb=document.getElementById("nextBtn");
+  if(step===STEPS.length-1){ nb.textContent="Hotovo ✓"; nb.disabled=true; }
+  else { nb.textContent = step===STEPS.length-2?"Zobrazit report →":"Pokračovat →"; nb.disabled=false; }
+  refreshLive();
+}
+document.getElementById("prevBtn").addEventListener("click",()=>{if(step>0){step--;render();window.scrollTo({top:0,behavior:"smooth"});}});
+document.getElementById("nextBtn").addEventListener("click",()=>{if(step<STEPS.length-1){step++;render();window.scrollTo({top:0,behavior:"smooth"});}});
+
+load();
+render();
+</script>
+</body>
+</html>
