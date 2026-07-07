@@ -185,6 +185,7 @@
       <div class="row"><span>Pronajato / kapacita</span><span id="lvUnits">—</span></div>
       <div class="row"><span>Poptávky</span><span id="lvDem">—</span></div>
       <div class="row"><span>Prohlídky</span><span id="lvView">—</span></div>
+      <div class="row"><span>Příchozí (předané)</span><span id="lvPrich">—</span></div>
       <div class="row"><span>Nové smlouvy</span><span id="lvNew">—</span></div>
       <div class="row"><span>Odchozí</span><span id="lvOut">—</span></div>
     </div>
@@ -289,8 +290,9 @@ function calc(){
   const occ = kap>0 ? pron/kap*100 : 0;
   const dem = num(S.poptavky.portaly)+num(S.poptavky.sreality)+num(S.poptavky.telefon);
   const nove = S.noveSmlouvy.filter(r=>r.najemnik&&r.najemnik.trim()).length;
+  const prich = S.noveSmlouvy.filter(r=>r.najemnik&&r.najemnik.trim()&&r.stav==="Jednotka předaná").length;
   const odch = S.odchozi.filter(r=>r.najemnik&&r.najemnik.trim()).length;
-  return {pron,kap,occ,dem,nove,odch};
+  return {pron,kap,occ,dem,nove,prich,odch};
 }
 
 /* ---------- step definitions ---------- */
@@ -571,7 +573,7 @@ function renderReport(c){
         <div class="sect">Pohyby nájemníků (tento týden)</div>
         <table>
           <tr><th style="text-align:right">Příchozí</th><th style="text-align:right">Odchozí</th><th style="text-align:right">Nové smlouvy (NS/PNS)</th></tr>
-          <tr><td class="n">${esc(S.prichozi||"0")}</td><td class="n">${d.odch}</td><td class="n">${d.nove}</td></tr>
+          <tr><td class="n">${d.prich}</td><td class="n">${d.odch}</td><td class="n">${d.nove}</td></tr>
         </table>
 
         <div class="sect">Inzerce</div>
@@ -619,7 +621,7 @@ function reportText(){
     L.push(`  ${t}: pronajato ${czNum(num(S.pronajato[t]))}/${czNum(num(S.kapacita[t]))}, volné ${czNum(vol)}, obsazenost ${czPct(o)}`);});
   L.push(`  CELKEM: ${czNum(d.pron)}/${czNum(d.kap)}, obsazenost ${czPct(d.occ)}`); L.push("");
   L.push("POHYBY NÁJEMNÍKŮ (tento týden)");
-  L.push(`  Příchozí: ${S.prichozi||"0"}   Odchozí: ${d.odch}   Nové smlouvy: ${d.nove}`); L.push("");
+  L.push(`  Příchozí: ${d.prich}   Odchozí: ${d.odch}   Nové smlouvy: ${d.nove}`); L.push("");
   L.push("INZERCE");
   const inz=S.inzerce.filter(r=>(r.odkaz&&r.odkaz.trim())||(r.popis&&r.popis.trim()));
   inz.length?inz.forEach(r=>L.push(`  ${r.popis?r.popis+": ":""}${r.odkaz||""}`)):L.push("  Bez odkazů na inzerci.");
@@ -663,6 +665,7 @@ function refreshLive(){
   document.getElementById("lvDem").textContent = czNum(d.dem);
   document.getElementById("lvView").textContent = czNum(num(S.prohlidky));
   document.getElementById("lvNew").textContent = d.nove;
+  document.getElementById("lvPrich").textContent = d.prich;
   document.getElementById("lvOut").textContent = d.odch;
   document.getElementById("topDate").textContent = S.datum? S.datum.split("-").reverse().join("."):"—";
 }
